@@ -1,0 +1,17 @@
+{
+    "name": "verg87/pure_php_server",
+    "description": "Server built entirely on php",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "verg87"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Server\\": "src/"
+        }
+    }
+}
