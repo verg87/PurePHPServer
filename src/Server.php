@@ -13,8 +13,7 @@ class Server
 
     public function __construct(
         public readonly string $address, 
-        public readonly int $port, 
-        private RequestHandler $requestHandler
+        public readonly int $port
     ) 
     {
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -35,19 +34,9 @@ class Server
                 continue;
             }
 
-            $source = socket_read($client, self::READ_LENGTH);
-
-            if (!$this->requestHandler->validate($source)) {
-                socket_close($client);
-                continue;
-            }
+            $request = Request::fromHeader(socket_read($client, self::READ_LENGTH));
 
             socket_write($client, "Hello from my server");
-
-            if (!$source) {
-                socket_close($client);
-                continue;
-            }
 
             socket_close($client);
         }
@@ -59,7 +48,6 @@ class Server
     }
 }
 
-$requestHandler = new RequestHandler();
-$server = new Server("127.0.0.1", 80, $requestHandler);
+$server = new Server("127.0.0.1", 80);
 
 $server->listen();
