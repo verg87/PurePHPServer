@@ -35,8 +35,9 @@ class Server
             }
 
             $request = Request::fromHeader(socket_read($client, self::READ_LENGTH));
+            $response = new Response("<p>Hello my friend!</p>");
 
-            socket_write($client, "Hello from my server");
+            socket_write($client, $response("text/html; charset=UTF-8"));
 
             socket_close($client);
         }
