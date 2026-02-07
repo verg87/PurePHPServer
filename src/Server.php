@@ -6,6 +6,9 @@ namespace Server;
 
 require_once __DIR__ . "/../vendor/autoload.php";
 
+CONST DEFAULT_PAGES_PATH = __DIR__ ."\pages";
+CONST PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
+
 class Server
 {
     CONST READ_LENGTH = 1024;
@@ -35,7 +38,7 @@ class Server
             }
 
             $request = Request::fromHeader(socket_read($client, self::READ_LENGTH));
-            $response = new Response("<p>Hello my friend!</p>");
+            $response = new Response($request);
 
             socket_write($client, $response("text/html; charset=UTF-8"));
 

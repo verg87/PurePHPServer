@@ -10,6 +10,7 @@ class Request
 
     public function __construct(
         public readonly string $method, 
+        public readonly string $uri,
         public readonly string $http, 
         public readonly array $headers
     )
@@ -20,7 +21,7 @@ class Request
     public static function fromHeader(string $request): static
     {
         $lines = array_filter(explode("\r\n", $request), fn($str) => strlen($str) > 0);
-        list($method, $http) = explode(" ", array_shift($lines));
+        list($method, $uri, $http) = explode(" ", array_shift($lines));
 
         $headers = [];
 
@@ -30,12 +31,12 @@ class Request
             $headers[$key] = $value;
         }
 
-        return new static($method, $http, $headers);
+        return new static($method, $uri, $http, $headers);
     }
 
     private function validate(string $method, string $http, array $headers): void
     {
-        if ($method !== "GET" || $method !== "POST" || $http !== "/ HTTP/1.1") {
+        if ($method !== "GET" || $method !== "POST" || $http !== "HTTP/1.1") {
             $this->error = 400;
         }
 
