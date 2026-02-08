@@ -7,6 +7,7 @@ namespace Server;
 use Server\Request;
 use Server\DEFAULT_PAGES_PATH;
 use Server\PUBLIC_PAGES_PATH;
+use Server\ICONS_PATH;
 
 class Response
 {
@@ -43,7 +44,14 @@ class Response
 		509 => 'Bandwidth Limit Exceeded'
 	];
 
-    protected array $initialHeaders = [];
+    protected array $initialHeaders = [
+		"HTTP/1.1" => "",
+		"Server" => "",
+		"Date" => "",
+		"Content-Length" => "",
+		"Content-Type" => "",
+		"Connection" => "",
+	];
 
 	protected Request|null $request = null;
 	protected string $body = '';
@@ -53,14 +61,15 @@ class Response
 		$this->request = $request;
 		$this->body = $body === "" ? $this->getDefaultBody() : $body;
 
-        $this->initialHeaders["HTTP/1.1"] = $this->status . " ". $this->statusCodes[$this->status];
-        $this->initialHeaders["Date"] = gmdate('D d M Y H:i:s T');
-        $this->initialHeaders["Content-Length"] = mb_strlen($body);
-        $this->initialHeaders["Connection"] = "keep-alive";
-		$this->initialHeaders["Server"] = "custom";
+		$this->header("HTTP/1.1", $this->status . " " . $this->statusCodes[$this->status]);
+		$this->header("Server", "Pure");
+		$this->header("Date", gmdate('D d M Y H:i:s T'));
+		$this->header("Content-Length", mb_strlen($this->body));
+		$this->header("Content-Type", $this->getContentType());
+		$this->header("Connection", $this->status >= 400 ? "close" : "keep-alive");
     }
 
-    public function __invoke(string $contentType): string
+    public function __invoke(): string
     {
         $statusLine = array_shift($this->initialHeaders);
     
@@ -70,29 +79,59 @@ class Response
             $headers .= $key .": ". $value ."\r\n";
         }
 
-        $headers .= "Content-Type: " . $contentType;
         $headers .= "\r\n\r\n";
 
-		// var_dump($this->body);
+		// var_dump($headers . $this->body);
         return $headers . $this->body;
     }
+
+	protected function header(string $key, mixed $value): void
+	{
+		$this->initialHeaders[$key] = $value;
+	}
 
 	protected function getDefaultBody(): string
 	{
 		$accept = explode(",", $this->request->headers["Accept"] ?? "");
 
 		if (!$accept || !count($accept) || $accept[0] === "text/html") {
+			$this->header("Content-Type", "text/html; charset=UTF-8");
+
 			if ($this->request->uri === "/") {
-				return file_get_contents(DEFAULT_PAGES_PATH . "/home.html");
+				return file_get_contents(DEFAULT_PAGES_PATH . "\home.html");
 			}
 
 			if (file_exists(PUBLIC_PAGES_PATH . $this->request->uri)) {
 				return file_get_contents(PUBLIC_PAGES_PATH . $this->request->uri);
 			}
 
-			return file_get_contents(DEFAULT_PAGES_PATH . "/RequestExceptions/NotFoundPage.html");
+			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		} else if (str_starts_with(strtolower($accept[0]),"image/")) {
+			$this->header("Content-Type", "image/png");
+			
+			$name = ICONS_PATH . "\pure-16.png";
+			$file = fopen($name, "rb");
+			$contents = fread($file, filesize($name));
+			fclose($file);
+
+			// Not working
+			$d = unpack("C*", $contents);
+			return "";
 		} else {
-			return file_get_contents(DEFAULT_PAGES_PATH . "/RequestExceptions/NotImplementedPage.html");
+			$this->status = 501;
+			$this->header("Content-Type", "text/html; charset=UTF-8");
+
+			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotImplementedPage.html");
 		}
+	}
+
+	protected function getContentType(): string
+	{
+		if ($this->initialHeaders["Content-Type"]) {
+			return $this->initialHeaders["Content-Type"];
+		}
+
+		// Need to analyze the manually passed body when creating response instance...
+		return "text/html";
 	}
 }

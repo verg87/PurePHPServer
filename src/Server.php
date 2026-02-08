@@ -8,6 +8,7 @@ require_once __DIR__ . "/../vendor/autoload.php";
 
 CONST DEFAULT_PAGES_PATH = __DIR__ ."\pages";
 CONST PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
+CONST ICONS_PATH = __DIR__ . "\..\icons";
 
 class Server
 {
@@ -38,9 +39,10 @@ class Server
             }
 
             $request = Request::fromHeader(socket_read($client, self::READ_LENGTH));
+            // var_dump($request->headers);
             $response = new Response($request);
 
-            socket_write($client, $response("text/html; charset=UTF-8"));
+            socket_write($client, $response());
 
             socket_close($client);
         }
@@ -55,3 +57,4 @@ class Server
 $server = new Server("127.0.0.1", 80);
 
 $server->listen();
+// var_dump(file_get_contents(__DIR__ . "/../web/pure-16.png"));
