@@ -64,7 +64,7 @@ class Response
 		$this->header("HTTP/1.1", $this->status . " " . $this->statusCodes[$this->status]);
 		$this->header("Server", "Pure");
 		$this->header("Date", gmdate('D d M Y H:i:s T'));
-		$this->header("Content-Length", mb_strlen($this->body));
+		$this->header("Content-Length", strlen($this->body));
 		$this->header("Content-Type", $this->getContentType());
 		$this->header("Connection", $this->status >= 400 ? "close" : "keep-alive");
     }
@@ -76,12 +76,13 @@ class Response
         $headers = "HTTP/1.1" . " " . $statusLine . "\r\n";
 
         foreach ($this->initialHeaders as $key => $value) {
-            $headers .= $key .": ". $value ."\r\n";
+			if ($key && $value) {
+				$headers .= $key .": ". $value ."\r\n";
+			}
         }
 
-        $headers .= "\r\n\r\n";
+        $headers .= "\r\n";
 
-		// var_dump($headers . $this->body);
         return $headers . $this->body;
     }
 
@@ -93,33 +94,36 @@ class Response
 	protected function getDefaultBody(): string
 	{
 		$accept = explode(",", $this->request->headers["Accept"] ?? "");
+		var_dump(unpack("C*", "A"));
 
 		if (!$accept || !count($accept) || $accept[0] === "text/html") {
-			$this->header("Content-Type", "text/html; charset=UTF-8");
+			$this->header("Content-Type", "text/html");
 
 			if ($this->request->uri === "/") {
 				return file_get_contents(DEFAULT_PAGES_PATH . "\home.html");
 			}
 
-			if (file_exists(PUBLIC_PAGES_PATH . $this->request->uri)) {
-				return file_get_contents(PUBLIC_PAGES_PATH . $this->request->uri);
+			$fileExtension = "";
+
+			if (!str_contains($this->request->uri, ".html")) {
+				$fileExtension = ".html";
+			}
+
+			if (file_exists(PUBLIC_PAGES_PATH . $this->request->uri . $fileExtension)) {
+				return file_get_contents(PUBLIC_PAGES_PATH . $this->request->uri . $fileExtension);
 			}
 
 			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
-		} else if (str_starts_with(strtolower($accept[0]),"image/")) {
+		} else if (
+			str_starts_with(strtolower($accept[0]),"image/") && 
+			$this->request->uri === "/favicon.ico"
+		) {
 			$this->header("Content-Type", "image/png");
 			
-			$name = ICONS_PATH . "\pure-16.png";
-			$file = fopen($name, "rb");
-			$contents = fread($file, filesize($name));
-			fclose($file);
-
-			// Not working
-			$d = unpack("C*", $contents);
-			return "";
+			return file_get_contents(ICONS_PATH . "\pure-32.png");
 		} else {
 			$this->status = 501;
-			$this->header("Content-Type", "text/html; charset=UTF-8");
+			$this->header("Content-Type", "text/html");
 
 			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotImplementedPage.html");
 		}
@@ -131,7 +135,13 @@ class Response
 			return $this->initialHeaders["Content-Type"];
 		}
 
-		// Need to analyze the manually passed body when creating response instance...
+		$info = new \finfo(FILEINFO_MIME_TYPE);
+		$type = $info->buffer($this->body);
+		
+		if ($type) {
+			return $type;
+		}
+
 		return "text/html";
 	}
 }

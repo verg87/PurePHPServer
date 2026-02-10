@@ -57,4 +57,3 @@ class Server
 $server = new Server("127.0.0.1", 80);
 
 $server->listen();
-// var_dump(file_get_contents(__DIR__ . "/../web/pure-16.png"));
