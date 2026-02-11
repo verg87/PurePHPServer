@@ -20,6 +20,7 @@ class Request
 
     public static function fromHeader(string $request): static
     {
+        var_dump($request);
         $lines = array_filter(explode("\r\n", $request), fn($str) => strlen($str) > 0);
         list($method, $uri, $http) = explode(" ", array_shift($lines));
 

@@ -9,6 +9,19 @@ use Server\DEFAULT_PAGES_PATH;
 use Server\PUBLIC_PAGES_PATH;
 use Server\ICONS_PATH;
 
+function findFileByWildcard($basePath): bool|string {
+    $matches = glob($basePath . '.*');
+
+    if ($matches !== false && count($matches) > 0) {
+        foreach ($matches as $match) {
+            if (is_file($match)) {
+                return $match;
+            }
+        }
+    }
+    return false;
+}
+
 class Response
 {
     protected array $statusCodes = [
@@ -94,7 +107,6 @@ class Response
 	protected function getDefaultBody(): string
 	{
 		$accept = explode(",", $this->request->headers["Accept"] ?? "");
-		var_dump(unpack("C*", "A"));
 
 		if (!$accept || !count($accept) || $accept[0] === "text/html") {
 			$this->header("Content-Type", "text/html");
@@ -103,14 +115,14 @@ class Response
 				return file_get_contents(DEFAULT_PAGES_PATH . "\home.html");
 			}
 
-			$fileExtension = "";
+			$source = PUBLIC_PAGES_PATH . $this->request->uri;
 
 			if (!str_contains($this->request->uri, ".html")) {
-				$fileExtension = ".html";
+				$source .= ".html";
 			}
 
-			if (file_exists(PUBLIC_PAGES_PATH . $this->request->uri . $fileExtension)) {
-				return file_get_contents(PUBLIC_PAGES_PATH . $this->request->uri . $fileExtension);
+			if (file_exists($source)) {
+				return file_get_contents($source);
 			}
 
 			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
@@ -121,11 +133,34 @@ class Response
 			$this->header("Content-Type", "image/png");
 			
 			return file_get_contents(ICONS_PATH . "\pure-32.png");
-		} else {
-			$this->status = 501;
+		} else if ($accept[0] === "application/json") {
+			if ($this->request->uri === "/") {
+				return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+			}
+
+			$source = PUBLIC_PAGES_PATH . $this->request->uri;
+
+			if (str_ends_with($source, "/")) {
+				$source = substr($source, 0, -1);
+			}
+			// preg_match("/\.[^\.\/]+/", $source, $matches);
+			// if (!preg_match($source))
+			// $source .= findFileByWildcard($source);
+
+			if (is_file($source) && file_exists($source)) {
+				$this->header("Content-Type", "application/json");
+
+				return file_get_contents($source);
+			}
+
 			$this->header("Content-Type", "text/html");
 
-			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotImplementedPage.html");
+			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		} else {
+			$this->status = 406;
+			$this->header("Content-Type", "text/html");
+
+			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
 		}
 	}
 
