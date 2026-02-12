@@ -5,22 +5,10 @@ declare(strict_types= 1);
 namespace Server;
 
 use Server\Request;
+use Server\Helpers\FilesHelper;
 use Server\DEFAULT_PAGES_PATH;
 use Server\PUBLIC_PAGES_PATH;
 use Server\ICONS_PATH;
-
-function findFileByWildcard($basePath): bool|string {
-    $matches = glob($basePath . '.*');
-
-    if ($matches !== false && count($matches) > 0) {
-        foreach ($matches as $match) {
-            if (is_file($match)) {
-                return $match;
-            }
-        }
-    }
-    return false;
-}
 
 class Response
 {
@@ -125,6 +113,7 @@ class Response
 				return file_get_contents($source);
 			}
 
+			$this->status = 404;
 			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
 		} else if (
 			str_starts_with(strtolower($accept[0]),"image/") && 
@@ -134,25 +123,41 @@ class Response
 			
 			return file_get_contents(ICONS_PATH . "\pure-32.png");
 		} else if ($accept[0] === "application/json") {
-			if ($this->request->uri === "/") {
-				return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
-			}
-
 			$source = PUBLIC_PAGES_PATH . $this->request->uri;
 
-			if (str_ends_with($source, "/")) {
-				$source = substr($source, 0, -1);
+			if ($this->request->uri === "/") {
+				$source = DEFAULT_PAGES_PATH . "\home.html";
 			}
-			// preg_match("/\.[^\.\/]+/", $source, $matches);
-			// if (!preg_match($source))
-			// $source .= findFileByWildcard($source);
+
+			if (str_ends_with($source, "/")) {
+				if (file_exists($source)) {
+					$source .= "index.html"; // Need to ask for user to set the default filename and extension
+				} else {
+					$source = substr($source, 0, -1);
+				}
+			}
+			
+			$sourceInfo = pathinfo($source);
+
+			if (!array_key_exists("extension", $sourceInfo)) {
+				// If there is no file extension then find a similar path, with file extension (that exists) and replace it
+				$source = FilesHelper::findFileByWildcard($source);
+			}
 
 			if (is_file($source) && file_exists($source)) {
-				$this->header("Content-Type", "application/json");
+				if (mime_content_type($source) === "application/json") {
+					$this->header("Content-Type", "application/json");
 
-				return file_get_contents($source);
+					return file_get_contents($source);
+				} else {
+					$this->status = 406;
+					$this->header("Content-Type", "text/html");
+
+					return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+				}
 			}
 
+			$this->status = 404;
 			$this->header("Content-Type", "text/html");
 
 			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
