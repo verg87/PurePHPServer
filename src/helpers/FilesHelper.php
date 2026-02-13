@@ -6,7 +6,7 @@ namespace Server\Helpers;
 
 class FilesHelper
 {
-    public static function findFileByWildcard(string $basePath): bool|string {
+    public static function findFileByWildcard(string $basePath): string {
         $matches = glob($basePath . '.*');
 
         if ($matches !== false && count($matches) > 0) {
@@ -16,6 +16,6 @@ class FilesHelper
                 }
             }
         }
-        return false;
+        return $basePath;
     }
 }

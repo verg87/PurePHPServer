@@ -6,9 +6,9 @@ namespace Server;
 
 use Server\Request;
 use Server\Helpers\FilesHelper;
+use Server\Configuration;
 use Server\DEFAULT_PAGES_PATH;
 use Server\PUBLIC_PAGES_PATH;
-use Server\ICONS_PATH;
 
 class Response
 {
@@ -65,7 +65,7 @@ class Response
 		$this->header("HTTP/1.1", $this->status . " " . $this->statusCodes[$this->status]);
 		$this->header("Server", "Pure");
 		$this->header("Date", gmdate('D d M Y H:i:s T'));
-		$this->header("Content-Length", strlen($this->body));
+		$this->header("Content-Length", mb_strlen($this->body));
 		$this->header("Content-Type", $this->getContentType());
 		$this->header("Connection", $this->status >= 400 ? "close" : "keep-alive");
     }
@@ -92,75 +92,64 @@ class Response
 		$this->initialHeaders[$key] = $value;
 	}
 
+	protected function handleAccept(string $accept, string $uri): string 
+	{
+		$source = PUBLIC_PAGES_PATH . $uri;
+
+		if ($uri === "/") {
+			$source = DEFAULT_PAGES_PATH . "\home.html";
+		}
+
+		if (str_ends_with($source, "/")) {
+			if (file_exists($source)) {
+				$source .= "index.html"; // Need to ask for user to set the default filename and extension
+			} else {
+				$source = substr($source, 0, -1);
+			}
+		}
+			
+		$sourceInfo = pathinfo($source);
+
+		if (!array_key_exists("extension", $sourceInfo)) {
+			// If there is no file extension then find a similar path, with file extension (that exists) and replace it
+			$source = FilesHelper::findFileByWildcard($source);
+		}
+
+		if (is_file($source) && file_exists($source)) {
+			if (mime_content_type($source) === $accept) {
+				$this->header("Content-Type", $accept);
+
+				return file_get_contents($source);
+			} else {
+				$this->status = 406;
+				$this->header("Content-Type", "text/html");
+
+				return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+			}
+		}
+
+		$this->status = 404;
+		$this->header("Content-Type", "text/html");
+
+		return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+	}
+
 	protected function getDefaultBody(): string
 	{
 		$accept = explode(",", $this->request->headers["Accept"] ?? "");
 
-		if (!$accept || !count($accept) || $accept[0] === "text/html") {
-			$this->header("Content-Type", "text/html");
-
-			if ($this->request->uri === "/") {
-				return file_get_contents(DEFAULT_PAGES_PATH . "\home.html");
-			}
-
-			$source = PUBLIC_PAGES_PATH . $this->request->uri;
-
-			if (!str_contains($this->request->uri, ".html")) {
-				$source .= ".html";
-			}
-
-			if (file_exists($source)) {
-				return file_get_contents($source);
-			}
-
-			$this->status = 404;
-			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		if (
+			!$accept || !count($accept) ||
+			$accept[0] === "text/html" || $accept[0] === "application/json"
+		) {
+			return $this->handleAccept($accept[0], $this->request->uri);
 		} else if (
 			str_starts_with(strtolower($accept[0]),"image/") && 
 			$this->request->uri === "/favicon.ico"
 		) {
 			$this->header("Content-Type", "image/png");
 			
-			return file_get_contents(ICONS_PATH . "\pure-32.png");
-		} else if ($accept[0] === "application/json") {
-			$source = PUBLIC_PAGES_PATH . $this->request->uri;
-
-			if ($this->request->uri === "/") {
-				$source = DEFAULT_PAGES_PATH . "\home.html";
-			}
-
-			if (str_ends_with($source, "/")) {
-				if (file_exists($source)) {
-					$source .= "index.html"; // Need to ask for user to set the default filename and extension
-				} else {
-					$source = substr($source, 0, -1);
-				}
-			}
-			
-			$sourceInfo = pathinfo($source);
-
-			if (!array_key_exists("extension", $sourceInfo)) {
-				// If there is no file extension then find a similar path, with file extension (that exists) and replace it
-				$source = FilesHelper::findFileByWildcard($source);
-			}
-
-			if (is_file($source) && file_exists($source)) {
-				if (mime_content_type($source) === "application/json") {
-					$this->header("Content-Type", "application/json");
-
-					return file_get_contents($source);
-				} else {
-					$this->status = 406;
-					$this->header("Content-Type", "text/html");
-
-					return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
-				}
-			}
-
-			$this->status = 404;
-			$this->header("Content-Type", "text/html");
-
-			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+			return file_get_contents(Configuration::getIconPath());
 		} else {
 			$this->status = 406;
 			$this->header("Content-Type", "text/html");
