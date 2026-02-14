@@ -62,6 +62,8 @@ class Response
 		$this->request = $request;
 		$this->body = $body === "" ? $this->getDefaultBody() : $body;
 
+		$this->handleRequestBody();
+
 		$this->header("HTTP/1.1", $this->status . " " . $this->statusCodes[$this->status]);
 		$this->header("Server", "Pure");
 		$this->header("Date", gmdate('D d M Y H:i:s T'));
@@ -87,6 +89,17 @@ class Response
         return $headers . $this->body;
     }
 
+	protected function handleRequestBody(): void
+	{
+		if ($this->request->body === "") {
+			return;
+		}
+
+		if ($this->request->method === "POST") {
+			// pass, need to be implemented
+		}
+	}
+
 	protected function header(string $key, mixed $value): void
 	{
 		$this->initialHeaders[$key] = $value;
@@ -97,12 +110,12 @@ class Response
 		$source = PUBLIC_PAGES_PATH . $uri;
 
 		if ($uri === "/") {
-			$source = DEFAULT_PAGES_PATH . "\home.html";
+			$source = Configuration::getDefaultPagePath();
 		}
 
 		if (str_ends_with($source, "/")) {
 			if (file_exists($source)) {
-				$source .= "index.html"; // Need to ask for user to set the default filename and extension
+				$source .= "index.html"; 
 			} else {
 				$source = substr($source, 0, -1);
 			}

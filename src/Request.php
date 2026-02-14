@@ -12,7 +12,8 @@ class Request
         public readonly string $method, 
         public readonly string $uri,
         public readonly string $http, 
-        public readonly array $headers
+        public readonly array $headers,
+        public readonly string $body,
     )
     {
         $this->validate($method, $http, $headers);
@@ -21,18 +22,31 @@ class Request
     public static function fromHeader(string $request): static
     {
         var_dump($request);
-        $lines = array_filter(explode("\r\n", $request), fn($str) => strlen($str) > 0);
+        $lines = array_filter(explode("\n", $request), fn($str) => strlen($str) > 0);
         list($method, $uri, $http) = explode(" ", array_shift($lines));
 
         $headers = [];
 
+        $body = "";
+        $isBody = false;
+
         foreach ($lines as $line) {
+            if ($isBody) {
+                $body .= $line;
+                continue;
+            }
+
+            if (!str_contains($line, ":") && $line === "\r") {
+                $isBody = true;
+                continue;
+            }
+
             list($key, $value) = explode(": ", $line);
 
             $headers[$key] = $value;
         }
 
-        return new static($method, $uri, $http, $headers);
+        return new static($method, $uri, $http, $headers, $body);
     }
 
     private function validate(string $method, string $http, array $headers): void

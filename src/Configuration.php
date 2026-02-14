@@ -21,23 +21,44 @@ class Configuration
 
         return file_put_contents($file, trim($content));
     }
-    public static function setIconPath(string $path): void
+
+    protected static function set(string $path, string $section, string $key): void
     {
         if ($path !== "" && file_exists($path)) {
             $conf = parse_ini_file(static::PATH, true);
-            $conf["icon"]["path"] = $path;
+            $conf[$section][$key] = $path;
 
             static::write_conf_file(static::PATH, $conf);
         }
     }
 
-    public static function getIconPath(): string
+    protected static function get(string $section, string $key): string
     {
         $conf = parse_ini_file(static::PATH, true);
         
-        return str_starts_with($conf["icon"]["path"], ".") 
-            ? __DIR__ . substr($conf["icon"]["path"], 1) 
-            : __DIR__ . $conf["icon"]["path"];
+        return str_starts_with($conf[$section][$key], ".") 
+            ? __DIR__ . substr($conf[$section][$key], 1) 
+            : __DIR__ . $conf[$section][$key];
+    }
+
+    public static function setIconPath(string $path): void
+    {
+        static::set($path, "Icon", "path");
+    }
+
+    public static function getIconPath(): string
+    {
+        return static::get("Icon", "path");
+    }
+
+    public static function setDefaultPagePath(string $path): void
+    {
+        static::set($path, "DefaultPage", "path");
+    }
+
+    public static function getDefaultPagePath(): string
+    {
+        return static::get("DefaultPage", "path");
     }
 }
 
