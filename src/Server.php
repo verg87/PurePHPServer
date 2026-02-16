@@ -9,6 +9,7 @@ require_once __DIR__ . "/../vendor/autoload.php";
 CONST DEFAULT_PAGES_PATH = __DIR__ ."\pages";
 CONST PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
 CONST ICONS_PATH = __DIR__ . "\..\icons";
+CONST TMP_FILES_PATH = __DIR__ . "\\tmp";
 
 class Server
 {

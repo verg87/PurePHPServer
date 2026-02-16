@@ -7,7 +7,7 @@ namespace Server;
 class Configuration
 {
     CONST PATH = __DIR__ . "\..\pure.conf";
-    protected static function write_conf_file(string $file, array $data): int|bool
+    public static function writeConfFile(string $file, array $data): int|bool
     {
         $content = "";
 
@@ -15,30 +15,41 @@ class Configuration
             $content .= "\n[$key]\n";
 
             foreach ($value as $subKey => $subValue) {
-                $content .= "$subKey = " . (is_numeric($subValue) ? $subValue : '"' . $subValue . '"') . "\n";
+                if (gettype($subValue) !== "array") {
+                    $content .= "$subKey = " . (is_numeric($subValue) ? $subValue : '"' . $subValue . '"') . "\n";
+
+                    continue;
+                }
+
+                foreach ($subValue as $subSubValue) {
+                    $content .= "$subKey" . "[]" . " = " . (is_numeric($subSubValue) ? $subSubValue : '"' . $subSubValue . '"') . "\n";
+                }
             }
         }
 
         return file_put_contents($file, trim($content));
     }
 
-    protected static function set(string $path, string $section, string $key): void
+    protected static function set(mixed $data, string $section, string $key): void
     {
-        if ($path !== "" && file_exists($path)) {
-            $conf = parse_ini_file(static::PATH, true);
-            $conf[$section][$key] = $path;
+        $type = gettype($data);
+        $validPath = ($type === "string" && $data !== "" && file_exists($data)) || $type === "array";
 
-            static::write_conf_file(static::PATH, $conf);
+        if (!in_array($type, ["array", "string"]) || !$validPath) {
+            return;
         }
+
+        $conf = parse_ini_file(static::PATH, true);
+        $conf[$section][$key] = $data;
+
+        static::writeConfFile(static::PATH, $conf);
     }
 
-    protected static function get(string $section, string $key): string
+    protected static function get(string $section, string $key): mixed
     {
         $conf = parse_ini_file(static::PATH, true);
         
-        return str_starts_with($conf[$section][$key], ".") 
-            ? __DIR__ . substr($conf[$section][$key], 1) 
-            : __DIR__ . $conf[$section][$key];
+        return $conf[$section][$key];
     }
 
     public static function setIconPath(string $path): void
@@ -60,6 +71,16 @@ class Configuration
     {
         return static::get("DefaultPage", "path");
     }
+
+    public static function setUserAllowedFileFormats(array $formats): void
+    {
+        static::set($formats, "UserAllowedFileFormats", "formats");
+    }
+
+    public static function getUserAllowedFileFormats(): array
+    {
+        return static::get("UserAllowedFileFormats", "formats");
+    }
 }
 
-// var_dump(Configuration::getIconPath());
+// var_dump(Configuration::getUserAllowedFileFormats());

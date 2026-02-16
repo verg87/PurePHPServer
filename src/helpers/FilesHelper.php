@@ -18,4 +18,10 @@ class FilesHelper
         }
         return $basePath;
     }
+
+    public static function generateRandomFileName(int $length = 16): string {
+        $randomString = bin2hex(random_bytes($length));  
+
+        return substr($randomString, 0, $length);  
+    }
 }

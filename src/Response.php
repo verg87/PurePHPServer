@@ -9,6 +9,7 @@ use Server\Helpers\FilesHelper;
 use Server\Configuration;
 use Server\DEFAULT_PAGES_PATH;
 use Server\PUBLIC_PAGES_PATH;
+use Server\TMP_FILES_PATH;
 
 class Response
 {
@@ -91,12 +92,20 @@ class Response
 
 	protected function handleRequestBody(): void
 	{
-		if ($this->request->body === "") {
+		if ($this->request->body === "" && mb_strlen($this->request->body) === 0) {
 			return;
 		}
 
 		if ($this->request->method === "POST") {
-			// pass, need to be implemented
+			$name = "\\" . FilesHelper::generateRandomFileName();
+			file_put_contents(TMP_FILES_PATH . $name, $this->request->body);
+
+			$info = new \finfo(FILEINFO_MIME_TYPE);
+			$type = $info->file(TMP_FILES_PATH . $name);
+
+			if (!in_array($type, Configuration::getUserAllowedFileFormats())) {
+				// pass, need to implement
+			}
 		}
 	}
 
@@ -129,7 +138,10 @@ class Response
 		}
 
 		if (is_file($source) && file_exists($source)) {
-			if (mime_content_type($source) === $accept) {
+			$info = new \finfo(FILEINFO_MIME_TYPE);
+			$type = $info->file($source);
+
+			if ($type === $accept) {
 				$this->header("Content-Type", $accept);
 
 				return file_get_contents($source);
