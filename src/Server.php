@@ -13,7 +13,7 @@ CONST TMP_FILES_PATH = __DIR__ . "\\tmp";
 
 class Server
 {
-    CONST READ_LENGTH = 1024;
+    CONST READ_LENGTH = 1024 * 128;
     private \Socket $socket;
 
     public function __construct(
@@ -33,14 +33,14 @@ class Server
             socket_listen($this->socket);
 
             $client = socket_accept($this->socket);
-
+            
             if (!$client) {
                 socket_close($client);
+                // var_dump("stuck");
                 continue;
             }
 
-            $request = Request::fromHeader(socket_read($client, self::READ_LENGTH));
-            // var_dump($request->headers);
+            $request = Request::fromHeader(socket_read($client, $this::READ_LENGTH));
             $response = new Response($request);
 
             socket_write($client, $response());

@@ -16,7 +16,7 @@ class Response
     protected array $statusCodes = [
 		100 => 'Continue',
 		101 => 'Switching Protocols',
-
+	
 		200 => 'OK',
 		201 => 'Created',
 		202 => 'Accepted',
@@ -27,6 +27,11 @@ class Response
 	
 		300 => 'Multiple Choices',
 		301 => 'Moved Permanently',
+		302 => 'Found', // 1.1
+		303 => 'See Other',
+		304 => 'Not Modified',
+		305 => 'Use Proxy',
+		307 => 'Temporary Redirect',
 	
 		400 => 'Bad Request',
 		401 => 'Unauthorized',
@@ -35,7 +40,17 @@ class Response
 		404 => 'Not Found',
 		405 => 'Method Not Allowed',
 		406 => 'Not Acceptable',
+		407 => 'Proxy Authentication Required',
 		408 => 'Request Timeout',
+		409 => 'Conflict',
+		410 => 'Gone',
+		411 => 'Length Required',
+		412 => 'Precondition Failed',
+		413 => 'Request Entity Too Large',
+		414 => 'Request-URI Too Long',
+		415 => 'Unsupported Media Type',
+		416 => 'Requested Range Not Satisfiable',
+		417 => 'Expectation Failed',
 	
 		500 => 'Internal Server Error',
 		501 => 'Not Implemented',
@@ -97,15 +112,40 @@ class Response
 		}
 
 		if ($this->request->method === "POST") {
-			$name = "\\" . FilesHelper::generateRandomFileName();
-			file_put_contents(TMP_FILES_PATH . $name, $this->request->body);
+			$allowedFileFormats = Configuration::getUserAllowedFileFormats();
+
+			$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
+
+			while (file_exists($filename)) {
+				$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
+				var_dump("in the loop");
+			}
+
+			var_dump($this->request->headers);
+			file_put_contents($filename, $this->request->body);
 
 			$info = new \finfo(FILEINFO_MIME_TYPE);
-			$type = $info->file(TMP_FILES_PATH . $name);
+			$type = $info->file($filename);
 
-			if (!in_array($type, Configuration::getUserAllowedFileFormats())) {
-				// pass, need to implement
+			if (!in_array($type, $allowedFileFormats)) {
+				var_dump(1);
+				$this->status = 415;
+				unlink($filename);
+
+				return;
 			}
+
+			if (str_starts_with($type, "image/")) {
+				if (!getimagesize($filename) || !exif_imagetype($filename)) {
+					var_dump(2);
+					$this->status = 415;
+					unlink($filename);
+
+					return;
+				}
+			}
+
+			// writing to db using orm of some sorts
 		}
 	}
 
@@ -119,7 +159,7 @@ class Response
 		$source = PUBLIC_PAGES_PATH . $uri;
 
 		if ($uri === "/") {
-			$source = Configuration::getDefaultPagePath();
+			$source = __DIR__ . Configuration::getDefaultPagePath();
 		}
 
 		if (str_ends_with($source, "/")) {
@@ -174,7 +214,7 @@ class Response
 		) {
 			$this->header("Content-Type", "image/png");
 			
-			return file_get_contents(Configuration::getIconPath());
+			return file_get_contents(__DIR__ . Configuration::getIconPath());
 		} else {
 			$this->status = 406;
 			$this->header("Content-Type", "text/html");
