@@ -13,19 +13,40 @@ class Request
         public readonly string $uri,
         public readonly string $http, 
         public readonly array $headers,
-        public readonly string $body,
+        protected string $body,
     )
     {
         $this->validate($method, $http, $headers);
     }
 
-    public static function fromHeader(string $request): static
+    public function addBody(string $body): void
     {
-        var_dump($request);
-        $lines = array_filter(explode("\n", $request), fn($str) => strlen($str) > 0);
+        $this->body .= $body;
+    }
+
+    public function getBody(): string
+    {
+        return $this->body;
+    }
+
+    public function header(string $name, bool $onlyValue = false): mixed
+    {
+        $header = array_key_exists($name, $this->headers) ? $this->headers[$name] : false;
+
+        if ($header && $onlyValue) {
+            return $header["value"];
+        }
+
+        return $header;
+    }
+
+    public static function fromHeader(string $headers): static
+    {
+        var_dump($headers);
+        $lines = array_filter(explode("\n", $headers), fn($str) => strlen($str) > 0);
         list($method, $uri, $http) = explode(" ", array_shift($lines));
 
-        $headers = [];
+        $headersArr = [];
 
         $body = "";
         $isBody = false;
@@ -41,12 +62,18 @@ class Request
                 continue;
             }
 
-            list($key, $value) = explode(": ", $line);
+            list($header, $headerValue) = explode(": ", $line);
+            
+            if (str_contains($headerValue, ";")) {
+                list($value, $arg) = explode(";", $headerValue);
 
-            $headers[$key] = $value;
+                $headersArr[$header] = ["value" => $value, "arg" => trim($arg)];
+            } else {
+                $headersArr[$header] = ["value" => $headerValue, "arg" => ""];
+            }
         }
 
-        return new static($method, $uri, $http, $headers, $body);
+        return new static($method, $uri, $http, $headersArr, $body);
     }
 
     private function validate(string $method, string $http, array $headers): void

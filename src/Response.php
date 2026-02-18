@@ -27,7 +27,7 @@ class Response
 	
 		300 => 'Multiple Choices',
 		301 => 'Moved Permanently',
-		302 => 'Found', // 1.1
+		302 => 'Found',
 		303 => 'See Other',
 		304 => 'Not Modified',
 		305 => 'Use Proxy',
@@ -105,13 +105,36 @@ class Response
         return $headers . $this->body;
     }
 
+	protected function parseRequestBody(): string|bool
+	{
+		$contentType = $this->request->header("Content-Type");
+		$boundry = $contentType ? explode("=", $contentType["arg"])[1] : "";
+
+		if (!$boundry) return false;
+
+		// Doesn't work, there is no \n characters
+		$lines = explode("\n", $this->request->getBody());
+		var_dump($lines);
+		$topBoundry = array_shift($lines);
+		$bottomBoundry = array_pop($lines);
+
+		if (!str_contains($topBoundry, $boundry) || !str_contains($bottomBoundry, $boundry)) {
+			return false;
+		}
+
+		$lines = array_slice($lines, 3);
+
+		return implode("", $lines);
+	}
+
 	protected function handleRequestBody(): void
 	{
-		if ($this->request->body === "" && mb_strlen($this->request->body) === 0) {
+		if ($this->request->getBody() === "" && mb_strlen($this->request->getBody()) === 0) {
 			return;
 		}
 
 		if ($this->request->method === "POST") {
+			// var_dump($this->parseRequestBody());
 			$allowedFileFormats = Configuration::getUserAllowedFileFormats();
 
 			$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
@@ -121,8 +144,7 @@ class Response
 				var_dump("in the loop");
 			}
 
-			var_dump($this->request->headers);
-			file_put_contents($filename, $this->request->body);
+			file_put_contents($filename, $this->request->getBody());
 
 			$info = new \finfo(FILEINFO_MIME_TYPE);
 			$type = $info->file($filename);
@@ -201,7 +223,8 @@ class Response
 
 	protected function getDefaultBody(): string
 	{
-		$accept = explode(",", $this->request->headers["Accept"] ?? "");
+		$acceptString = $this->request->header("Accept", true) ?? "";
+		$accept = explode(",", $acceptString);
 
 		if (
 			!$accept || !count($accept) ||
