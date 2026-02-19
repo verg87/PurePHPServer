@@ -108,23 +108,42 @@ class Response
 	protected function parseRequestBody(): string|bool
 	{
 		$contentType = $this->request->header("Content-Type");
-		$boundry = $contentType ? explode("=", $contentType["arg"])[1] : "";
+		$boundry = "";
+
+		if (preg_match("/boundary=(.*)$/", $contentType["arg"], $matches)) {
+			$boundry = trim($matches[1]);
+		}
 
 		if (!$boundry) return false;
 
-		// Doesn't work, there is no \n characters
-		$lines = explode("\n", $this->request->getBody());
-		var_dump($lines);
-		$topBoundry = array_shift($lines);
-		$bottomBoundry = array_pop($lines);
+		$body = $this->request->getBody();
+		var_dump("un-parsed body");
+		var_dump($body);
+		$topBoundry = "--" . $boundry . "\r";
+		$bottomBoundry = "--" . $boundry . "--" . "\r";
 
-		if (!str_contains($topBoundry, $boundry) || !str_contains($bottomBoundry, $boundry)) {
+		if (!str_starts_with($body, $topBoundry) && str_starts_with($body, $topBoundry . "\n")) {
+			$topBoundry .= "\n";
+		}
+
+		if (!str_ends_with($body, $bottomBoundry) && str_ends_with($body, $bottomBoundry . "\n")) {
+			$bottomBoundry .= "\n";
+		}
+
+		if (
+			!str_starts_with($body, $topBoundry) || 
+			!str_ends_with($body, $bottomBoundry)
+		) {
 			return false;
 		}
 
-		$lines = array_slice($lines, 3);
+		$body = substr($body, strlen($topBoundry) - 1);
+		$body = substr($body, 0, -1 * strlen($bottomBoundry));
 
-		return implode("", $lines);
+		var_dump("parsed body");
+		var_dump($body);
+
+		return "";
 	}
 
 	protected function handleRequestBody(): void
@@ -134,7 +153,7 @@ class Response
 		}
 
 		if ($this->request->method === "POST") {
-			// var_dump($this->parseRequestBody());
+			$this->parseRequestBody();
 			$allowedFileFormats = Configuration::getUserAllowedFileFormats();
 
 			$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();

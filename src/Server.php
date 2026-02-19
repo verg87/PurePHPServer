@@ -52,7 +52,7 @@ class Server
             {
                 $chunk = socket_read($client, $this::READ_LENGTH);
                 $readAmount -= mb_strlen($chunk);
-                var_dump($chunk);
+                // var_dump($chunk);
                 $request->addBody($chunk);
 
                 if ($readAmount === 0);

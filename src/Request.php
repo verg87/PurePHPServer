@@ -42,7 +42,7 @@ class Request
 
     public static function fromHeader(string $headers): static
     {
-        var_dump($headers);
+        // var_dump($headers);
         $lines = array_filter(explode("\n", $headers), fn($str) => strlen($str) > 0);
         list($method, $uri, $http) = explode(" ", array_shift($lines));
 
@@ -67,7 +67,7 @@ class Request
             if (str_contains($headerValue, ";")) {
                 list($value, $arg) = explode(";", $headerValue);
 
-                $headersArr[$header] = ["value" => $value, "arg" => trim($arg)];
+                $headersArr[$header] = ["value" => $value, "arg" => $arg];
             } else {
                 $headersArr[$header] = ["value" => $headerValue, "arg" => ""];
             }
