@@ -40,6 +40,7 @@ class Server
             }
 
             $headers = socket_read($client, $this::READ_LENGTH);
+            var_dump($headers);
             $request = Request::fromHeader($headers);
 
             $readAmount = $request->header("Content-Length", true) ?? 0;
@@ -52,7 +53,7 @@ class Server
             {
                 $chunk = socket_read($client, $this::READ_LENGTH);
                 $readAmount -= mb_strlen($chunk);
-                // var_dump($chunk);
+                // var_dump(2);
                 $request->addBody($chunk);
 
                 if ($readAmount === 0);

@@ -105,7 +105,7 @@ class Response
         return $headers . $this->body;
     }
 
-	protected function parseRequestBody(): string|bool
+	protected function parseRequestBody(string $body): string|bool
 	{
 		$contentType = $this->request->header("Content-Type");
 		$boundry = "";
@@ -116,9 +116,6 @@ class Response
 
 		if (!$boundry) return false;
 
-		$body = $this->request->getBody();
-		var_dump("un-parsed body");
-		var_dump($body);
 		$topBoundry = "--" . $boundry . "\r";
 		$bottomBoundry = "--" . $boundry . "--" . "\r";
 
@@ -140,10 +137,20 @@ class Response
 		$body = substr($body, strlen($topBoundry) - 1);
 		$body = substr($body, 0, -1 * strlen($bottomBoundry));
 
-		var_dump("parsed body");
-		var_dump($body);
+		preg_match_all("/\r\n/", $body, $bodyBreakers, PREG_OFFSET_CAPTURE);
 
-		return "";
+		if (!$bodyBreakers || count($bodyBreakers) < 1) {
+			return false;
+		} 
+
+		$finds = count($bodyBreakers[0]);
+		if ($finds < 6 || $bodyBreakers[0][$finds - 3] < 2) {
+			return false;
+		}
+		
+		$body = substr($body, $bodyBreakers[0][$finds - 3][1], strlen($body));
+
+		return trim($body);
 	}
 
 	protected function handleRequestBody(): void
@@ -153,23 +160,26 @@ class Response
 		}
 
 		if ($this->request->method === "POST") {
-			$this->parseRequestBody();
-			$allowedFileFormats = Configuration::getUserAllowedFileFormats();
+			$parsedBody = $this->parseRequestBody($this->request->getBody());
+			// var_dump($parsedBody);
 
+			if (!$parsedBody) {
+				return;
+			}
+
+			$allowedFileFormats = Configuration::getUserAllowedFileFormats();
 			$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
 
 			while (file_exists($filename)) {
 				$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
-				var_dump("in the loop");
 			}
 
-			file_put_contents($filename, $this->request->getBody());
+			file_put_contents($filename, $parsedBody);
 
 			$info = new \finfo(FILEINFO_MIME_TYPE);
 			$type = $info->file($filename);
 
 			if (!in_array($type, $allowedFileFormats)) {
-				var_dump(1);
 				$this->status = 415;
 				unlink($filename);
 
@@ -178,7 +188,6 @@ class Response
 
 			if (str_starts_with($type, "image/")) {
 				if (!getimagesize($filename) || !exif_imagetype($filename)) {
-					var_dump(2);
 					$this->status = 415;
 					unlink($filename);
 

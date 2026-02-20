@@ -49,16 +49,15 @@ class Request
         $headersArr = [];
 
         $body = "";
-        $isBody = false;
 
-        foreach ($lines as $line) {
-            if ($isBody) {
-                $body .= $line;
-                continue;
+        foreach ($lines as $index => $line) {
+            if (!str_contains($line, ":") && $line === "\r" && $index + 1 !== count($lines)) {
+                //? works kinda silly
+                $body = implode("\n", array_slice($lines, $index, count($lines) + 1));
+                break;
             }
 
-            if (!str_contains($line, ":") && $line === "\r") {
-                $isBody = true;
+            if (trim($line) === "") {
                 continue;
             }
 
