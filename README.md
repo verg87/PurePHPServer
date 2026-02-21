@@ -1,6 +1,6 @@
 # PurePHPServer: A Server Built Entirely On PHP
 
-It is a humble, simple server, which is not intended for any serious use. It was created for educational purposes
+It is a humble, simple server, which is not intended for any serious use. It was created for educational purposes only
 
 ## Installation
 

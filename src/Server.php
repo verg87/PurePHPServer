@@ -44,6 +44,7 @@ class Server
             $request = Request::fromHeader($headers);
 
             $readAmount = $request->header("Content-Length", true) ?? 0;
+            var_dump($request->getBody());
 
             while (
                 $request->method === "POST" && 

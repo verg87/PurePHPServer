@@ -140,11 +140,13 @@ class Response
 		preg_match_all("/\r\n/", $body, $bodyBreakers, PREG_OFFSET_CAPTURE);
 
 		if (!$bodyBreakers || count($bodyBreakers) < 1) {
+			var_dump(12);
 			return false;
 		} 
 
 		$finds = count($bodyBreakers[0]);
 		if ($finds < 6 || $bodyBreakers[0][$finds - 3] < 2) {
+			var_dump(13);
 			return false;
 		}
 		
@@ -161,7 +163,7 @@ class Response
 
 		if ($this->request->method === "POST") {
 			$parsedBody = $this->parseRequestBody($this->request->getBody());
-			// var_dump($parsedBody);
+			var_dump($parsedBody);
 
 			if (!$parsedBody) {
 				return;
@@ -180,6 +182,7 @@ class Response
 			$type = $info->file($filename);
 
 			if (!in_array($type, $allowedFileFormats)) {
+				var_dump($type, $allowedFileFormats);
 				$this->status = 415;
 				unlink($filename);
 
@@ -190,6 +193,7 @@ class Response
 				if (!getimagesize($filename) || !exif_imagetype($filename)) {
 					$this->status = 415;
 					unlink($filename);
+					var_dump(16);
 
 					return;
 				}

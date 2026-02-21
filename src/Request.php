@@ -52,8 +52,9 @@ class Request
 
         foreach ($lines as $index => $line) {
             if (!str_contains($line, ":") && $line === "\r" && $index + 1 !== count($lines)) {
-                //? works kinda silly
-                $body = implode("\n", array_slice($lines, $index, count($lines) + 1));
+                //?
+                $lines = array_map(fn($line) => trim($line), array_slice($lines, $index, count($lines)));
+                $body = trim(implode("\r\n", $lines)) . "\r\n";
                 break;
             }
 
