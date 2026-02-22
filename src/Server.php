@@ -13,7 +13,8 @@ CONST TMP_FILES_PATH = __DIR__ . "\\tmp";
 
 class Server
 {
-    CONST READ_LENGTH = 1024 * 32;
+    // half a MB
+    CONST READ_LENGTH = 1024 * 512;
     private \Socket $socket;
 
     public function __construct(
@@ -44,7 +45,6 @@ class Server
             $request = Request::fromHeader($headers);
 
             $readAmount = $request->header("Content-Length", true) ?? 0;
-            var_dump($request->getBody());
 
             while (
                 $request->method === "POST" && 
@@ -54,7 +54,6 @@ class Server
             {
                 $chunk = socket_read($client, $this::READ_LENGTH);
                 $readAmount -= mb_strlen($chunk);
-                // var_dump(2);
                 $request->addBody($chunk);
 
                 if ($readAmount === 0);

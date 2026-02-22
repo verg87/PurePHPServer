@@ -42,22 +42,21 @@ class Request
 
     public static function fromHeader(string $headers): static
     {
-        // var_dump($headers);
+        preg_match("/\r\n\r\n/", $headers, $headersEndSign, PREG_OFFSET_CAPTURE);
+
+        $body = "";
+
+        if ($headersEndSign && count($headersEndSign) === 1 && count($headersEndSign[0]) === 2) {
+            $body = substr($headers, $headersEndSign[0][1] + 4);
+            $headers = substr($headers, 0, $headersEndSign[0][1]);
+        }
+
         $lines = array_filter(explode("\n", $headers), fn($str) => strlen($str) > 0);
         list($method, $uri, $http) = explode(" ", array_shift($lines));
 
         $headersArr = [];
 
-        $body = "";
-
-        foreach ($lines as $index => $line) {
-            if (!str_contains($line, ":") && $line === "\r" && $index + 1 !== count($lines)) {
-                //?
-                $lines = array_map(fn($line) => trim($line), array_slice($lines, $index, count($lines)));
-                $body = trim(implode("\r\n", $lines)) . "\r\n";
-                break;
-            }
-
+        foreach ($lines as $line) {
             if (trim($line) === "") {
                 continue;
             }
