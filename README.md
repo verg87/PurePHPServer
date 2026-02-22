@@ -15,6 +15,14 @@ You need to have php installed on your machine to run this server. Either xampp 
     git clone https://github.com/verg87/PurePHPServer.git
     ```
 
+## Features
+
+*   **HTTP Request/Response Handling:** It manually parses raw HTTP requests and constructs HTTP responses. GET and POST methods are supported
+*   **Static File Serving:** It can serve various file types from the corresponding `public` directory, with the `Content-Type` being determined by the file's mime type.
+*   **File Uploads:** The server can accept files sent via `POST` requests with `multipart/form-data` form. It checks the mime type of the uploaded file against a configurable list of allowed types. Uploaded files are temporarily stored in the `src/tmp` directory.
+*   **Configurable Behavior:** Key server settings are externalized to a `.conf` file.
+*   **Custom Error Handling:** It has built-in HTML pages for common HTTP errors like 404 (Not Found) and 406 (Not Acceptable).
+
 ## Run The Server
 
 To run the server use this command:

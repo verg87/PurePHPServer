@@ -73,10 +73,10 @@ class Response
 	protected Request|null $request = null;
 	protected string $body = '';
 
-    public function __construct(Request $request, string $body = "", protected int $status = 200)
+    public function __construct(Request $request, protected int $status = 200)
     {
 		$this->request = $request;
-		$this->body = $body === "" ? $this->getDefaultBody() : $body;
+		$this->body = $this->getDefaultBody();
 
 		$this->handleRequestBody();
 
