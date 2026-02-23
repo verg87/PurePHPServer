@@ -27,5 +27,5 @@ You need to have php installed on your machine to run this server. Either xampp 
 
 To run the server use this command:
 ```bash
-php PurePHPServer\src\Server.php
+php PurePHPServer\index.php
 ```
