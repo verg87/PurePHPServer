@@ -82,5 +82,3 @@ class Configuration
         return static::get("UserAllowedFileFormats", "formats");
     }
 }
-
-// var_dump(Configuration::getUserAllowedFileFormats());

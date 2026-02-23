@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Server;
 
-require_once __DIR__ . "/../vendor/autoload.php";
+require_once __DIR__ . "\\..\\vendor\\autoload.php";
 
 CONST DEFAULT_PAGES_PATH = __DIR__ ."\pages";
 CONST PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
@@ -41,7 +41,6 @@ class Server
             }
 
             $headers = socket_read($client, $this::READ_LENGTH);
-            var_dump($headers);
             $request = Request::fromHeader($headers);
 
             $readAmount = $request->header("Content-Length", true) ?? 0;
@@ -73,7 +72,3 @@ class Server
         socket_close($this->socket);
     }
 }
-
-$server = new Server("127.0.0.1", 80);
-
-$server->listen();

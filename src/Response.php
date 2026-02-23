@@ -71,11 +71,13 @@ class Response
 	];
 
 	protected Request|null $request = null;
+	protected int $status;
 	protected string $body = '';
 
-    public function __construct(Request $request, protected int $status = 200)
+    public function __construct(Request $request, int $status = 200)
     {
 		$this->request = $request;
+		$this->status = $status;
 		$this->body = $this->getDefaultBody();
 
 		$this->handleRequestBody();
@@ -156,7 +158,6 @@ class Response
 
 		if ($this->request->method === "POST") {
 			$parsedBody = $this->parseRequestBody($this->request->getBody());
-			// var_dump($parsedBody);
 
 			if (!$parsedBody) {
 				return;
@@ -246,27 +247,48 @@ class Response
 
 	protected function getDefaultBody(): string
 	{
-		$acceptString = $this->request->header("Accept", true) ?? "";
-		$accept = explode(",", $acceptString);
+		$acceptParams = $this->request->header("Accept") ?? [];
+		$acceptString = preg_replace("/;q=\d\.?\d*/", "", $acceptParams["value"] . $acceptParams["arg"]);
 
-		if (
-			!$accept || !count($accept) ||
-			$accept[0] === "text/html" || $accept[0] === "application/json"
-		) {
-			return $this->handleAccept($accept[0], $this->request->uri);
-		} else if (
-			str_starts_with(strtolower($accept[0]),"image/") && 
-			$this->request->uri === "/favicon.ico"
-		) {
-			$this->header("Content-Type", "image/png");
-			
-			return file_get_contents(__DIR__ . Configuration::getIconPath());
-		} else {
-			$this->status = 406;
-			$this->header("Content-Type", "text/html");
+		$acceptOptions = explode(",", $acceptString);
+		$source = "";
 
-			return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+		$notFoundPage = file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		$notAcceptablePage = file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+
+		foreach ($acceptOptions as $accept) {
+			if ($source !== "" && $source !== $notAcceptablePage && $source !== $notFoundPage) {
+				break;
+			}
+
+			if ($accept === "text/html" ||  $accept === "application/json") {
+				$source = $this->handleAccept($accept, $this->request->uri);
+			} else if (
+				str_starts_with(strtolower($accept),"image/") && 
+				$this->request->uri === "/favicon.ico"
+			) {
+				$this->header("Content-Type", "image/png");
+				
+				$source = file_get_contents(__DIR__ . Configuration::getIconPath());
+			} else if (
+				str_starts_with(strtolower($accept),"image/")
+			) {
+				$source = $this->handleAccept($accept, $this->request->uri);
+			} 
 		}
+
+		if (!$acceptOptions || count($acceptOptions) === 0) {
+			return $this->handleAccept($accept[0], $this->request->uri);
+		} 
+
+		if ($source !== "") {
+			return $source;
+		}
+		
+		$this->status = 404;
+		$this->header("Content-Type", "text/html");
+
+		return $notFoundPage;
 	}
 
 	protected function getContentType(): string
