@@ -77,7 +77,11 @@ class Request
 
     private function validate(string $method, string $http, array $headers): void
     {
-        if ($method !== "GET" || $method !== "POST" || $http !== "HTTP/1.1") {
+        if ($method !== "GET" && $method !== "POST" || $http !== "HTTP/1.1") {
+            $this->error = 400;
+        }
+
+        if (!array_key_exists("Host", $this->headers)) {
             $this->error = 400;
         }
 

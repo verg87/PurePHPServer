@@ -40,6 +40,10 @@ class Configuration
         }
 
         $conf = parse_ini_file(static::PATH, true);
+        if (!$conf) {
+            return;
+        }
+
         $conf[$section][$key] = $data;
 
         static::writeConfFile(static::PATH, $conf);
@@ -48,6 +52,9 @@ class Configuration
     protected static function get(string $section, string $key): mixed
     {
         $conf = parse_ini_file(static::PATH, true);
+        if (!$conf) {
+            return [];
+        }
         
         return $conf[$section][$key];
     }
