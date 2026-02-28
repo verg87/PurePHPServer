@@ -6,7 +6,11 @@ namespace Server;
 
 class Configuration
 {
-    CONST PATH = __DIR__ . "\..\pure.conf";
+    public const DEFAULT_PAGES_PATH = __DIR__ . "\pages";
+    public const PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
+    public const ICONS_PATH = __DIR__ . "\..\icons";
+    public const TMP_FILES_PATH = __DIR__ . "\\tmp";
+    public const PATH = __DIR__ . "\..\pure.conf";
     public static function writeConfFile(string $file, array $data): int|bool
     {
         $content = "";

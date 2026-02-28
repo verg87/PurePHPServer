@@ -6,11 +6,6 @@ namespace Server;
 
 require_once __DIR__ . "\\..\\vendor\\autoload.php";
 
-CONST DEFAULT_PAGES_PATH = __DIR__ ."\pages";
-CONST PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
-CONST ICONS_PATH = __DIR__ . "\..\icons";
-CONST TMP_FILES_PATH = __DIR__ . "\\tmp";
-
 class Server
 {
     // half a MB
@@ -19,7 +14,8 @@ class Server
 
     public function __construct(
         public readonly string $address, 
-        public readonly int $port
+        public readonly int $port,
+        private Router|null $router = null,
     ) 
     {
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -59,9 +55,11 @@ class Server
                     break;
             }
 
-            $response = new Response($request);
+            $body = $this->router 
+                ? $this->router->resolve($request->uri, $request->method)
+                : "";
 
-            socket_write($client, $response());
+            socket_write($client, (new Response($request, 200, $body))());
 
             socket_close($client);
         }

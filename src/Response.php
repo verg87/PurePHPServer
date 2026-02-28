@@ -7,9 +7,6 @@ namespace Server;
 use Server\Request;
 use Server\Helpers\FilesHelper;
 use Server\Configuration;
-use Server\DEFAULT_PAGES_PATH;
-use Server\PUBLIC_PAGES_PATH;
-use Server\TMP_FILES_PATH;
 
 class Response
 {
@@ -74,11 +71,11 @@ class Response
 	protected int $status;
 	protected string $body = '';
 
-    public function __construct(Request $request, int $status = 200)
+    public function __construct(Request $request, int $status = 200, string $body = "")
     {
 		$this->request = $request;
 		$this->status = $status;
-		$this->body = $this->getDefaultBody();
+		$this->body = $body === "" ? $this->getDefaultBody() : $body;
 
 		$this->handleRequestBody();
 
@@ -164,10 +161,10 @@ class Response
 			}
 
 			$allowedFileFormats = Configuration::getUserAllowedFileFormats();
-			$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
+			$filename = Configuration::TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
 
 			while (file_exists($filename)) {
-				$filename = TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
+				$filename = Configuration::TMP_FILES_PATH . "\\" . FilesHelper::generateRandomFileName();
 			}
 
 			file_put_contents($filename, $parsedBody);
@@ -202,7 +199,7 @@ class Response
 
 	protected function handleAccept(string $accept, string $uri): string 
 	{
-		$source = PUBLIC_PAGES_PATH . $uri;
+		$source = Configuration::PUBLIC_PAGES_PATH . $uri;
 
 		if ($uri === "/") {
 			$source = __DIR__ . Configuration::getDefaultPagePath();
@@ -235,14 +232,14 @@ class Response
 				$this->status = 406;
 				$this->header("Content-Type", "text/html");
 
-				return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+				return file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
 			}
 		}
 
 		$this->status = 404;
 		$this->header("Content-Type", "text/html");
 
-		return file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		return file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
 	}
 
 	protected function getDefaultBody(): string
@@ -253,8 +250,8 @@ class Response
 		$acceptOptions = explode(",", $acceptString);
 		$source = "";
 
-		$notFoundPage = file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
-		$notAcceptablePage = file_get_contents(DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+		$notFoundPage = file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		$notAcceptablePage = file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
 
 		foreach ($acceptOptions as $accept) {
 			if ($source !== "" && $source !== $notAcceptablePage && $source !== $notFoundPage) {
