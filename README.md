@@ -14,6 +14,14 @@ You need to have php installed on your machine to run this server. Either xampp 
     ```bash
     git clone https://github.com/verg87/PurePHPServer.git
     ```
+3. Go into the folder
+    ```bash
+    cd PurePHPServer
+    ```
+4. Generate autoload files
+    ```bash
+    composer install
+    ```
 
 ## Features
 
