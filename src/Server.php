@@ -55,11 +55,11 @@ class Server
                     break;
             }
 
-            $body = $this->router 
+            $responseBody = $this->router 
                 ? $this->router->resolve($request->uri, $request->method)
                 : "";
 
-            socket_write($client, (new Response($request, 200, $body))());
+            socket_write($client, (new Response($request, 200, $responseBody))());
 
             socket_close($client);
         }

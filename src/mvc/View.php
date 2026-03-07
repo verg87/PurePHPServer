@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Server\MVC;
 
 use Server\MVC\ViewInterface;
+use Server\Helpers\FilesHelper;
 use Server\Configuration;
 
 class View implements ViewInterface
@@ -22,7 +23,13 @@ class View implements ViewInterface
 
     public function render(): string
     {
-        $page = Configuration::PUBLIC_PAGES_PATH . '/' . $this->name . '.html';
+        $page = Configuration::getPublicPagesPath() . '/' . $this->name;
+
+        $sourceInfo = pathinfo($page);
+
+		if (!array_key_exists("extension", $sourceInfo)) {
+			$page = FilesHelper::findFileByWildcard($page);
+		}
 
         if (!$this->name) {
             return file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\index.html");

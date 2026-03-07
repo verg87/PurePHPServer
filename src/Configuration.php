@@ -7,8 +7,6 @@ namespace Server;
 class Configuration
 {
     public const DEFAULT_PAGES_PATH = __DIR__ . "\pages";
-    public const PUBLIC_PAGES_PATH = __DIR__ . "\..\public";
-    public const ICONS_PATH = __DIR__ . "\..\icons";
     public const TMP_FILES_PATH = __DIR__ . "\\tmp";
     public const PATH = __DIR__ . "\..\pure.conf";
     public static function writeConfFile(string $file, array $data): int|bool
@@ -81,6 +79,16 @@ class Configuration
     public static function getDefaultPagePath(): string
     {
         return static::get("DefaultPage", "path");
+    }
+
+    public static function setPublicPagesPath(string $path): void
+    {
+        static::set($path, "PublicPages", "path");
+    }
+
+    public static function getPublicPagesPath(): string
+    {
+        return static::get("PublicPages", "path");
     }
 
     public static function setUserAllowedFileFormats(array $formats): void

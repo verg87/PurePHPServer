@@ -85,6 +85,15 @@ class Response
 		$this->header("Content-Length", mb_strlen($this->body));
 		$this->header("Content-Type", $this->getContentType());
 		$this->header("Connection", $this->status >= 400 ? "close" : "keep-alive");
+
+		// security
+		$this->header("X-Frame-Options", "DENY");
+		$this->header("X-Content-Type-Options", "nosniff");
+		$this->header("Referrer-Policy", "no-referrer");
+		$this->header("Content-Security-Policy", "default-src 'self'");
+		$this->header("Cross-Origin-Resourse-Policy", "same-origin");
+		$this->header("Cross-Origin-Embedder-Policy", "require-corp");
+		$this->header("Cross-Origin-Opener-Policy", "same-origin");
     }
 
     public function __invoke(): string
@@ -199,7 +208,7 @@ class Response
 
 	protected function handleAccept(string $accept, string $uri): string 
 	{
-		$source = Configuration::PUBLIC_PAGES_PATH . $uri;
+		$source = Configuration::getPublicPagesPath() . $uri;
 
 		if ($uri === "/") {
 			$source = __DIR__ . Configuration::getDefaultPagePath();
