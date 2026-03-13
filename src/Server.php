@@ -6,6 +6,8 @@ namespace Server;
 
 require_once __DIR__ . "\\..\\vendor\\autoload.php";
 
+use Server\Loggers\AccessLogger;
+
 class Server
 {
     // half a MB
@@ -16,6 +18,7 @@ class Server
         public readonly string $address, 
         public readonly int $port,
         private Router|null $router = null,
+        private bool $accessLogging = false,
     ) 
     {
         $this->socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -59,7 +62,13 @@ class Server
                 ? $this->router->resolve($request->uri, $request->method)
                 : "";
 
-            socket_write($client, (new Response($request, 200, $responseBody))());
+            $response = new Response($request, 200, $responseBody);
+
+            if ($this->accessLogging) {
+                AccessLogger::start($request, $response, $client);
+            }
+
+            socket_write($client, $response());
 
             socket_close($client);
         }

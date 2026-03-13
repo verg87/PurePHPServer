@@ -9,6 +9,6 @@ use Server\Router;
 $router = (new Router())
     ->get("/", [Controller::class, "index"]);
 
-$server = new Server("127.0.0.1", 80, $router);
+$server = new Server("127.0.0.1", 80, $router, true);
 
 $server->listen();

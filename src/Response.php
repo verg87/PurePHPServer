@@ -68,14 +68,14 @@ class Response
 	];
 
 	protected Request|null $request = null;
-	protected int $status;
+	public int $status;
 	protected string $body = '';
 
     public function __construct(Request $request, int $status = 200, string $body = "")
     {
 		$this->request = $request;
-		$this->status = $status;
 		$this->body = $body === "" ? $this->getDefaultBody() : $body;
+		$this->status = $this->getStatus($this->body);
 
 		$this->handleRequestBody();
 
@@ -112,6 +112,24 @@ class Response
 
         return $headers . $this->body;
     }
+
+	protected function getStatus(string $body): int
+	{
+		$notFoundPage = file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotFoundPage.html");
+		$notAccessiblePage = file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotAcceptablePage.html");
+		$notImplementedPage = file_get_contents(Configuration::DEFAULT_PAGES_PATH . "\RequestExceptions\NotImplementedPage.html");
+
+		switch ($body) {
+			case $notFoundPage:
+				return 404;
+			case $notAccessiblePage:
+				return 406;
+			case $notImplementedPage:
+				return 501;
+			default: 
+				return 200;
+		}
+	}
 
 	protected function parseRequestBody(string $body): string|bool
 	{
